@@ -100,23 +100,35 @@ static UIViewController* TopMostController(void) {
                             }
                         } else {
                             [feedback notificationOccurred:UINotificationFeedbackTypeError];
+                            NSString* errorMessage = [NSString stringWithFormat:
+                                @"FFmpeg failed\n\n"
+                                @"State: %@\n"
+                                @"Return code: %@\n\n"
+                                @"Fail stack trace:\n%@\n\n"
+                                @"Logs:\n%@",
+                                session.getState,
+                                returnCode,
+                                [session getFailStackTrace] ?: @"<none>",
+                                [session getLogsAsString] ?: @"<none>"
+                            ];
+
                             UIAlertController* alert = [UIAlertController
-                                alertControllerWithTitle:
-                                    [[BHTBundle sharedBundle]
-                                        localizedTwitterStringForKey:@"ERROR_ALERT_TITLE"]
-                                                 message:[[BHTBundle sharedBundle]
-                                                             localizedStringForKey:
-                                                                 @"UNKNOWN_ERROR"]
-                                          preferredStyle:UIAlertControllerStyleAlert];
-                            [alert addAction:
-                                       [UIAlertAction
-                                           actionWithTitle:[[BHTBundle sharedBundle]
-                                                               localizedTwitterStringForKey:
-                                                                   @"OK_ACTION_LABEL"]
-                                                     style:UIAlertActionStyleDefault
-                                                   handler:nil]];
+                                alertControllerWithTitle:@"Download Error"
+                                                message:errorMessage
+                                        preferredStyle:UIAlertControllerStyleAlert];
+                            [alert addAction:[UIAlertAction
+                                actionWithTitle:@"Copy to Clipboard"
+                                        style:UIAlertActionStyleDefault
+                                        handler:^(__unused UIAlertAction* action) {
+                                            [UIPasteboard generalPasteboard].string = errorMessage;
+                                        }]];
+                            [alert addAction:[UIAlertAction
+                                actionWithTitle:[[BHTBundle sharedBundle]
+                                                    localizedTwitterStringForKey:@"OK_ACTION_LABEL"]
+                                        style:UIAlertActionStyleCancel
+                                        handler:nil]];
                             [TopMostController() presentViewController:alert
-                                                              animated:YES
+                                                            animated:YES
                                                             completion:nil];
                         }
                     });
@@ -311,22 +323,32 @@ static UIViewController* TopMostController(void) {
             buildVariantItems(videoEntities.firstObject, presentSheet);
         }
     } @catch (__unused NSException* ex) {
-        UIAlertController* alert = [UIAlertController
-            alertControllerWithTitle:
-                [[BHTBundle sharedBundle]
-                    localizedTwitterStringForKey:@"ERROR_ALERT_TITLE"]
-                             message:[[BHTBundle sharedBundle]
-                                         localizedStringForKey:@"UNKNOWN_ERROR"]
-                      preferredStyle:UIAlertControllerStyleAlert];
-        [alert addAction:[UIAlertAction
-                             actionWithTitle:[[BHTBundle sharedBundle]
-                                                 localizedTwitterStringForKey:
-                                                     @"OK_ACTION_LABEL"]
-                                       style:UIAlertActionStyleDefault
-                                     handler:nil]];
-        [TopMostController() presentViewController:alert
-                                          animated:YES
-                                        completion:nil];
+        NSString* errorMessage = [NSString stringWithFormat:
+        @"Exception: %@\n\n"
+        @"Reason: %@\n\n"
+        @"User Info:\n%@",
+        ex.name,
+        ex.reason ?: @"<none>",
+        ex.userInfo ?: @"<none>"
+    ];
+    UIAlertController* alert = [UIAlertController
+        alertControllerWithTitle:@"Unexpected Error"
+                         message:errorMessage
+                  preferredStyle:UIAlertControllerStyleAlert];
+    [alert addAction:[UIAlertAction
+        actionWithTitle:@"Copy to Clipboard"
+                  style:UIAlertActionStyleDefault
+                handler:^(__unused UIAlertAction* action) {
+                    [UIPasteboard generalPasteboard].string = errorMessage;
+                }]];
+    [alert addAction:[UIAlertAction
+        actionWithTitle:[[BHTBundle sharedBundle]
+                            localizedTwitterStringForKey:@"OK_ACTION_LABEL"]
+                  style:UIAlertActionStyleCancel
+                handler:nil]];
+    [TopMostController() presentViewController:alert
+                                      animated:YES
+                                    completion:nil];
     }
 }
 
